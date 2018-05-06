@@ -1,0 +1,145 @@
+ @Given("^Sign up as new user with primary location \"([^\"]*)\"$")
+    public void signupAsNewUser(String primaryLocation) {
+        log.info("[Step] Sign up as new user with primary location [" + primaryLocation + "].");
+        fillSignUpForm();
+        enterPrimaryLocation(primaryLocation);
+        checkLocation();
+        signup();
+        setUserActivity("active");
+    }
+
+    @When("^Login to application with \"([^\"]*)\" username and \"([^\"]*)\" password$")
+    public void loginToRacPortal(String usernameType, String passwordType) {
+        final RcmLoginData usernameData = RcmLoginData.valueOf(usernameType.toUpperCase());
+        final RcmLoginData passwordData = RcmLoginData.valueOf(passwordType.toUpperCase());
+
+        Class<?> returnPage = RcmRpSigninPageSteps.class;
+        if (usernameData == RcmLoginData.VALID && passwordData == RcmLoginData.VALID) {
+            returnPage = RcmRpDashboardPageSteps.class;
+        }
+        log.info("[Step] Login to application with [" + usernameData + "] username and [" + passwordData + "] password");
+        app.signinPage().loginPopup().login(usernameData.getUsername(), passwordData.getPassword(), returnPage);
+    }
+    
+    @Then("^Close login popup$")
+    public void closeLoginPopup() {
+        log.info("[Step] Close login popup");
+        app.signinPage().loginPopup().close();
+    }
+
+    @Then("^Check access denied \"([^\"]*)\" message is shown$")
+    public void checkAccessDeniedErrorMessage(final String message) {
+        log.info("[Step] Check access denied [" +message+ "] message is shown");
+        app.accessDeniedPage().verifyIsAccessDeniedErrorMessageEqualsTo(message);
+    }
+
+    // Composite Steps
+    @Then("^Check login error message \"([^\"]*)\" is displayed$")
+    public void verifyIsLoginErrorMessageEqualsTo(final String errorMessage) {
+        log.info("[Step] Validation message [" + errorMessage + "]");
+        app.signinPage().loginPopup().verifyIsLoginErrorMessageEqualsTo(errorMessage);
+    }
+
+    @Then("^Check user is logged in$")
+    public void verifyIsUserLoggedIn() {
+        log.info("[Step] Check user is logged in");
+        app.dashboardPage().verifyIsUserLoggedIn();
+    }
+
+    @Then("^Check user is not logged in$")
+    public void verifyIsUserNotLoggedIn() {
+        log.info("[Step] Check user is not logged in");
+        app.signinPage().loginPopup().close().verifyIsUserNotLoggedIn();
+    }
+    
+    @Then("^Click 'Forgotten your password' link$")
+    public void clickForgottenYourPasswordLink() {
+        log.info("[Step] Click 'Forgotten your password?' link");
+        app.thankYouPage().forgottenYourPassword();
+    }
+
+    @Then("^Enter new registered user email$")
+    public void enterNewRegisteredUserEmail() {
+        log.info("[Step] Enter new registered user email");
+        app.forgottenPasswordPage().setEmail(getSupplier().getCredentials().getEmail());
+    }
+    
+    @Then("^Enter not existing user email$")
+    public void enterNotExistingUserEmail() {
+        log.info("[Step] Enter not existing user email");
+        app.forgottenPasswordPage().setEmail(RandomString.getRandomAlphanumeric(8).concat("@").concat(RandomString.getRandomAlphanumeric(6)).concat(".com"));
+    }
+    
+    @Then("^Click 'Continue' on 'Forgotten Password' page$")
+    public void continueOnForgottenPassword() {
+        log.info("[Step] Click 'Continue' on 'Forgotten Password' page");
+        app.forgottenPasswordPage().continue$();
+    }
+    
+    @Then("^Click 'Continue' on 'Reset Password' page$")
+    public void continueOnResetPassword() {
+        log.info("[Step] Click 'Continue' on 'Reset Password' page");
+        app.resetPasswordExpiredPage().continue$();
+    }
+    
+    @Then("^Check reset password \"([^\"]*)\" message is displayed$")
+    public void continueForgottenPassword(final String message) {
+        log.info("[Step] Check reset password [" + message + "] message is displayed");
+        app.forgottenPasswordResetPage().verifyIsResetMessageEqualsTo(message);
+    }
+    
+    @Then("^Open generated reset password link$")
+    public void openGeneratedResetPasswordLink() {
+        final String resetKey = RcmDataProcessor.getResetKey(getSupplier().getCredentials().getEmail());
+        final String resetPasswordLink = RAC_PORTAL_BASE_URL+"/#/reset-password/"+resetKey;
+        log.info("[Step] Open generated reset password link [" +resetPasswordLink+ "]");
+        browser.openUrl(resetPasswordLink);
+        app.resetPasswordPage();
+    }
+    
+    @Then("^Open 'Locations' page by direct link$")
+    public void openSelectedPageByDirectLink() {
+        final String locationsLink = RAC_PORTAL_BASE_URL+"/#/locations";
+        log.info("[Step] Open 'Locations' page by direct link [" +locationsLink+ "]");
+        browser.openUrl(locationsLink);
+    }
+    
+    @Then("^Open invalid/expired reset password link$")
+    public void openInvalidOrExpiredResetPasswordLink() {
+        final String resetKey = RandomString.getRandomAlphanumeric(16);
+        log.info("[Step] Open invalid/expired reset password link");
+        browser.openUrl(RAC_PORTAL_BASE_URL+"/#/reset-password/"+resetKey);
+        app.resetPasswordExpiredPage();
+    }
+    
+    @Then("^Check invalid reset link message \"([^\"]*)\" is shown$")
+    public void checkInvalidResetLinkMessageIsShowns(final String message) {
+        log.info("[Step] Check invalid reset link message [" + message + "] is shown");
+        app.resetPasswordExpiredPage().verifyIsExpiredRestLinkMessageEqualsTo(message);
+    }
+    
+    @Then("^Fill reset password field with new password$")
+    public void fillResetPassword() {
+        final String newPassword = "Password001!";
+        log.info("[Step] Fill reset password field with new password");
+        app.resetPasswordPage().fillPassword(newPassword);
+        getSupplier().getCredentials().setPassword(newPassword);
+    }
+    
+    @Then("^Fill reset confirm password field with consistent password$")
+    public void fillResetConfirmPassword() {
+        log.info("[Step] Fill reset confirm password with consistent password");
+        app.resetPasswordPage().fillConfirmPassword(getSupplier().getCredentials().getPassword());
+    }
+    
+    @Then("^Click 'Reset' button on 'Reset Password' page$")
+    public void clickResetButton() {
+        log.info("[Step] Click 'Reset' button on 'Reset Password' page");
+        app.resetPasswordPage().reset();
+    }
+    
+    @Then("^Check reset password message \"([^\"]*)\" is displayed$")
+    public void checkResetPasswordMessage(final String message) {
+        log.info("[Step] Check reset password message [" +message+ "] is displayed");
+        app.resetPasswordPage().verifyIsResetPasswordMessageEqualsTo(message);
+    }
